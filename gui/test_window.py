@@ -5,35 +5,43 @@ from logic.image_processor import modify_image_intensity, resize_image
 from tkinter import messagebox
 
 class TestWindow:
-    def __init__(self, master, controller, results_manager, end_callback):
+    def __init__(self, master, controller, results_manager, end_callback, test_duration=60):
         self.master = master
         self.controller = controller
         self.results_manager = results_manager
         self.end_callback = end_callback
+        self.test_duration = test_duration  # nowy parametr
 
         self.master.title("Test percepcji barw")
         self.master.geometry("600x500")
 
-        self.frame = tk.Frame(self.master)
+        self.frame = tk.Frame(self.master, bg="white")
         self.frame.pack(expand=True, fill="both")
 
-        self.image_label = tk.Label(self.frame)
+        self.image_label = tk.Label(self.frame, bg="white")
         self.image_label.pack(pady=20)
 
-        self.stop_button = tk.Button(
-            self.frame, text="Przerwij test", command=self.stop_test)
+        self.stop_button = tk.Button(self.frame, text="Przerwij test", command=self.stop_test)
         self.stop_button.pack(side="bottom", pady=20)
 
         self.current_image_path = None
         self.start_time = None
         self.intensity = 0
-        self.direction = 1  # 1 - zwiększamy, -1 - zmniejszamy
+        self.direction = 1
         self.timeout_id = None
+
+        # Timer całkowitego czasu testu
+        self.total_test_timeout_id = self.master.after(self.test_duration * 1000, self.on_test_time_exceeded)
 
         self.master.bind("<space>", self.on_space_press)
 
         self.load_next_image()
         self.update_image_intensity()
+
+    def on_test_time_exceeded(self):
+        tk.messagebox.showinfo("Koniec testu", 
+            f"Minął wybrany czas testu ({self.test_duration} s). Test zostanie zakończony.")
+        self.end_test()
 
     def load_next_image(self):
         img_path = self.controller.get_next_image()
@@ -93,7 +101,11 @@ class TestWindow:
         self.end_test()
 
     def end_test(self):
+        # Anuluj timery
         if self.timeout_id is not None:
             self.master.after_cancel(self.timeout_id)
+        if self.total_test_timeout_id is not None:
+            self.master.after_cancel(self.total_test_timeout_id)
+
         self.master.destroy()
         self.end_callback()

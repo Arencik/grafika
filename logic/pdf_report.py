@@ -17,8 +17,7 @@ def generate_pdf_report(pdf_path, images_for_pdf, chart_path_current, chart_path
     # Lista obrazów z miniaturami
     for item in images_for_pdf:
         dt_str = datetime.fromtimestamp(item['timestamp']).strftime("%Y-%m-%d %H:%M:%S")
-        line = f"Obraz: {item['image_name']} | Czas: {item['reaction_time']:.2f}s | Intensywność: {item['intensity']} | {dt_str}"
-        print(line)
+        line = f"Obraz: {item['image_name']} | Czas: {item['reaction_time']:.2f}s | Intensywnosc: {item['intensity']} | {dt_str}"
         c.drawString(50, y_pos, line)
         y_pos -= 20
         # Rysujemy dwa obrazki: oryginał i filtr obok siebie

@@ -69,30 +69,17 @@ class ResultWindow:
         canvas1.draw()
         canvas1.get_tk_widget().pack(side="left", padx=10, pady=10)
 
+        self.pdf_button = tk.Button(self.button_frame, text="Generuj PDF", command=lambda: self.generate_pdf(chart_path_current, chart_path_history))
+        self.pdf_button.pack(side="top", padx=10, pady=10)
+
         canvas2 = FigureCanvasTkAgg(fig2, master=self.charts_frame)
         canvas2.draw()
         canvas2.get_tk_widget().pack(side="right", padx=10, pady=10)
 
         # Przycisk PDF pod ramką wykresów
-        self.pdf_button = tk.Button(self.button_frame, text="Generuj PDF", command=lambda: self.generate_pdf(chart_path_current, chart_path_history))
-        self.pdf_button.pack(side="left", padx=10, pady=10)
+        
 
     def load_all_results(self):
-        """
-        Load all results from a CSV file.
-
-        This method reads a CSV file located at "resources/output/results.csv" and 
-        loads the data into a list of dictionaries. Each dictionary contains the 
-        following keys:
-            - "timestamp": A float representing the timestamp of the result.
-            - "image_name": A string representing the name of the image.
-            - "reaction_time": A float representing the reaction time.
-            - "intensity": An integer representing the intensity.
-
-        Returns:
-            list: A list of dictionaries containing the results. If the CSV file 
-            does not exist, an empty list is returned.
-        """
         csv_path = "resources/output/results.csv"
         if not os.path.exists(csv_path):
             return []
@@ -109,23 +96,11 @@ class ResultWindow:
         return results
 
     def create_current_test_bar_plot(self, results):
-        """
-        Creates a horizontal bar plot of average reaction times for each image in the current test.
-        Args:
-            results (list of dict): A list of dictionaries where each dictionary contains 'image_name' (str) 
-                                    and 'reaction_time' (float) keys representing the image name and the 
-                                    reaction time for that image.
-        Returns:
-            tuple: A tuple containing the following elements:
-                - fig (matplotlib.figure.Figure): The created matplotlib figure.
-                - ax (matplotlib.axes._axes.Axes): The created matplotlib axes.
-                - chart_path_current (str): The file path where the plot image is saved.
-        """
         # Obliczamy średni czas reakcji dla każdego obrazu w bieżącym teście
         from statistics import mean
         results_by_image = {}
         for r in results:
-            img = r['image_name']
+            img = r['image_name'].split("\\")[-1]
             if img not in results_by_image:
                 results_by_image[img] = []
             results_by_image[img].append(r['reaction_time'])
@@ -149,16 +124,6 @@ class ResultWindow:
         return fig, ax, chart_path_current
 
     def create_historical_line_plot(self, all_results, current_results):
-        """
-        Creates a historical line plot of reaction times over time for different images.
-        Parameters:
-        all_results (list of dict): A list of dictionaries containing historical results. 
-                                    Each dictionary should have keys 'image_name', 'timestamp', and 'reaction_time'.
-        current_results (list of dict): A list of dictionaries containing current results. 
-                                        Each dictionary should have keys 'image_name', 'timestamp', and 'reaction_time'.
-        Returns:
-        tuple: A tuple containing the figure object, the axes object, and the path to the saved chart image.
-        """
         # Tworzymy liniowy wykres czasu reakcji w funkcji czasu dla poszczególnych obrazów
         # x - czas (datetime), y - czas reakcji, seria - nazwa obrazu
         fig, ax = plt.subplots(figsize=(5,4))
@@ -182,8 +147,9 @@ class ResultWindow:
             ax.plot(x, y, marker='o', label=img)
 
         # Dodajemy formatowanie osi X jako datę i godzinę
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d %H:%M:%S"))
-        fig.autofmt_xdate()  # automatyczne pochylanie etykiet
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d %H:%M"))
+        fig.autofmt_xdate(rotation=70, ha='right')  # automatyczne pochylanie etykiet z rotacją i wyrównaniem
+        fig.set_size_inches(5, 4)
 
         ax.set_title("Czas reakcji w funkcji czasu (wszystkie testy)")
         ax.set_xlabel("Data i godzina")
@@ -196,23 +162,7 @@ class ResultWindow:
         return fig, ax, chart_path_history
 
     def generate_pdf(self, chart_path_current, chart_path_history):
-        """
-        Generates a PDF report containing images and charts.
-        This method processes a list of results, resizes and modifies images based on the results,
-        and then generates a PDF report that includes these images along with the provided charts.
-        Args:
-            chart_path_current (str): The file path to the current chart image.
-            chart_path_history (str): The file path to the historical chart image.
-        Returns:
-            None
-        Raises:
-            FileNotFoundError: If any of the image paths do not exist.
-            Exception: If there is an error during the PDF generation process.
-        Side Effects:
-            Saves resized and modified images to the output directory.
-            Generates and saves a PDF report to the output directory.
-            Displays a message box with the path to the generated PDF report.
-        """
+
         output_dir = "resources/output"
         results = self.results_manager.get_results()
 
