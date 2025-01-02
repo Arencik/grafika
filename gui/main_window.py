@@ -1,11 +1,9 @@
-# gui/main_window.py
-
+import os
 import tkinter as tk
-from tkinter import ttk  # aby użyć np. ttk.Combobox, jeżeli wolisz
 from gui.test_window import TestWindow
 from logic.test_controller import TestController
 from logic.results_manager import ResultsManager
-import os
+
 
 class MainWindow:
     def __init__(self, master):

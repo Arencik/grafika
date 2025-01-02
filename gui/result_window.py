@@ -1,16 +1,18 @@
-import tkinter as tk
-from tkinter import messagebox
-import matplotlib
-matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import os
 import csv
-import time
+import matplotlib
+import tkinter as tk
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from datetime import datetime
-from logic.latex_report import generate_pdf_with_fallback
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image
+from tkinter import messagebox
+from logic.latex_report import generate_pdf_with_fallback
+
+
+matplotlib.use("TkAgg")
+
 
 class ResultWindow:
     def __init__(self, master, results_manager):
@@ -195,12 +197,11 @@ class ResultWindow:
 
         pdf_path = os.path.join(output_dir, "report.pdf")
 
-        # Tu kluczowa linia:
         generate_pdf_with_fallback(pdf_path, images_for_pdf, chart_path_current, chart_path_history)
 
         messagebox.showinfo("PDF", f"Wygenerowano raport PDF: {pdf_path}")
 
-        # Usunięcie plików tymczasowych, jeśli chcesz
+        # Usunięcie plików tymczasowych
         for file_name in os.listdir(output_dir):
             if file_name.startswith("orig_") or file_name.startswith("filtered_"):
                 os.remove(os.path.join(output_dir, file_name))

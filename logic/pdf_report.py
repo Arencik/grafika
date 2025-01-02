@@ -1,11 +1,12 @@
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
 import os
 from datetime import datetime
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+
 
 def generate_pdf_report(pdf_path, images_for_pdf, chart_path_current, chart_path_history):
     c = canvas.Canvas(pdf_path, pagesize=A4)
-    width, height = A4
+    _, height = A4
 
     # Nagłówek
     c.setTitle("Raport z testu percepcji barw")

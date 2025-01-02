@@ -11,7 +11,6 @@ def modify_image_intensity(img, intensity, channel="blue"):
     Modyfikuje wartość wybranego kanału (R, G lub B) do poziomu `intensity`.
     Domyślnie modyfikujemy kanał niebieski.
     """
-    from PIL import Image
     img = img.convert("RGB")
     pixels = img.load()
 

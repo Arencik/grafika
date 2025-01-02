@@ -1,9 +1,10 @@
+import datetime
 import os
 import subprocess
 import shutil
 
-from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+
 from logic.pdf_report import generate_pdf_report
 
 ########################################
@@ -17,83 +18,8 @@ def is_latex_installed():
     latex_path = shutil.which("pdflatex")  # None, jeśli nie znaleziono
     return latex_path is not None
 
-
 ########################################
-# 2) Funkcja fallback, uproszczone generowanie PDF (ReportLab)
-########################################
-
-def generate_pdf_report_fallback(pdf_path, images_for_pdf, chart_path_current, chart_path_history):
-    """
-    Uproszczona wersja generowania PDF za pomocą reportlab,
-    jeśli nie ma LaTeX-a.
-
-    Wstawiamy np. listę obrazów + krótki tekst.
-    """
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.utils import ImageReader
-
-    c = canvas.Canvas(pdf_path, pagesize=A4)
-    width, height = A4
-
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, height - 50, "Uproszczony raport (Fallback)")
-
-    # Wypisanie listy obrazów i ewentualnie wklejenie miniatur
-    y_pos = height - 100
-    c.setFont("Helvetica", 12)
-
-    c.drawString(50, y_pos, "Lista wyników (brak LaTeX-a, generowane w ReportLab):")
-    y_pos -= 30
-
-    for item in images_for_pdf:
-        line = (
-            f"Obraz: {item['image_name']}, czas: {item['reaction_time']:.2f}s, "
-            f"intensywnosc: {item['intensity']}"
-        )
-        c.drawString(50, y_pos, line)
-        y_pos -= 20
-
-        if os.path.exists(item['orig_path']):
-
-            try:
-                img = ImageReader(item['orig_path'])
-                c.drawImage(img, 50, y_pos - 80, width=100, height=80, preserveAspectRatio=True)
-            except:
-                pass
-        if os.path.exists(item['filtered_path']):
-            try:
-                img = ImageReader(item['filtered_path'])
-                c.drawImage(img, 200, y_pos - 80, width=100, height=80, preserveAspectRatio=True)
-            except:
-                pass
-        y_pos -= 100
-
-
-    if os.path.exists(chart_path_current):
-        c.drawString(50, y_pos, "Wykres bieżącego testu (fallback) ↓")
-        y_pos -= 20
-        try:
-            c.drawImage(chart_path_current, 50, y_pos - 200, width=300, height=200, preserveAspectRatio=True)
-        except:
-            pass
-        y_pos -= 220
-
-    if os.path.exists(chart_path_history):
-        c.drawString(50, y_pos, "Wykres historyczny (fallback) ↓")
-        y_pos -= 20
-        try:
-            c.drawImage(chart_path_history, 50, y_pos - 200, width=300, height=200, preserveAspectRatio=True)
-        except:
-            pass
-        y_pos -= 220
-
-    c.showPage()
-    c.save()
-
-
-########################################
-# 3) Oryginalna funkcja od generowania LaTeX
+# 2) Oryginalna funkcja od generowania LaTeX
 ########################################
 
 LATEX_HEADER = r"""
@@ -107,8 +33,8 @@ LATEX_HEADER = r"""
 \renewcommand{\Studenci}{Generator raportów}
 \renewcommand{\Szkola}{Wyższa Szkoła Przedsiębiorczości i Administracji}
 \renewcommand{\lab}{Raport z testu}
-\renewcommand{\grlab}{Gr-1}
-\renewcommand{\Data}{06-11-2024}
+\renewcommand{\grlab}{Gr-5}
+\renewcommand{\Data}{"""+f"{datetime.datetime.now().strftime('%d-%m-%Y')}"+r"""}
 
 \begin{document}
 \RapPage
@@ -130,7 +56,7 @@ def generate_latex_report(pdf_path, images_for_pdf, chart_path_current, chart_pa
     for item in images_for_pdf:
         line = (
             f"Obraz: {item['image_name']}, czas: {item['reaction_time']:.2f}s, "
-            f"intensywność: {item['intensity']}, timestamp: {item['timestamp']}."
+            f"intensywność: {item['intensity']}."
         )
         section_images.append(line)
         section_images.append(r"\begin{figure}[H]")
@@ -222,4 +148,3 @@ def generate_pdf_with_fallback(pdf_path, images_for_pdf, chart_path_current, cha
     else:
         print("[WARN] LaTeX nie jest dostępny. Generujemy uproszczony PDF (fallback).")
         generate_pdf_report(pdf_path, images_for_pdf, chart_path_current, chart_path_history)
-        # generate_pdf_report_fallback(pdf_path, images_for_pdf, chart_path_current, chart_path_history)
