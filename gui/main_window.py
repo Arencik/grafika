@@ -44,11 +44,6 @@ class MainWindow:
         self.start_button = tk.Button(self.frame, text="Start testu", command=self.start_test)
         self.start_button.pack(pady=10)
 
-        # Przycisk PDF z poprzednich testów
-        self.pdf_button = tk.Button(self.frame, text="Generuj PDF z poprzednich testów", 
-                                    command=self.generate_pdf_from_history)
-        self.pdf_button.pack(pady=5)
-
         self.controller = TestController()
         self.results_manager = ResultsManager()
 
@@ -84,44 +79,3 @@ class MainWindow:
         result_window = tk.Toplevel(self.master)
         ResultWindow(result_window, self.results_manager)
 
-    def generate_pdf_from_history(self):
-        """
-        Funkcja, która generuje PDF z istniejących historycznych danych
-        (jeśli takie istnieją).
-        """
-        # Wczytaj wszystkie wyniki z pliku CSV
-        from gui.result_window import ResultWindow
-        all_results = self.load_all_results()
-
-        if not all_results:
-            tk.messagebox.showinfo("PDF", "Brak historycznych wyników do wygenerowania PDF.")
-            return
-
-        # Sztucznie „podrzucimy” te dane do results_managera,
-        # a następnie wywołamy okno z generowaniem PDF.
-        temp_manager = ResultsManager() 
-        temp_manager.results = all_results
-
-        dummy_window = tk.Toplevel(self.master)
-        dummy_window.withdraw()  # Ukryj okno
-        rw = ResultWindow(dummy_window, temp_manager)
-
-    def load_all_results(self):
-        """
-        Pomocnicza funkcja do wczytania wszystkich rezultatów z CSV.
-        """
-        import csv
-        csv_path = "resources/output/results.csv"
-        if not os.path.exists(csv_path):
-            return []
-        results = []
-        with open(csv_path, "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                results.append({
-                    "timestamp": float(row["timestamp"]),
-                    "image_name": row["image_name"],
-                    "reaction_time": float(row["reaction_time"]),
-                    "intensity": int(row["intensity"])
-                })
-        return results

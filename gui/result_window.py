@@ -9,7 +9,7 @@ import os
 import csv
 import time
 from datetime import datetime
-from logic.pdf_report import generate_pdf_report
+from logic.latex_report import generate_pdf_with_fallback
 from PIL import Image
 
 class ResultWindow:
@@ -131,7 +131,7 @@ class ResultWindow:
         # Grupowanie historycznych wyników po obrazie
         results_by_image = {}
         for r in all_results:
-            img = r['image_name']
+            img = r['image_name'].split("\\")[-1]
             if img not in results_by_image:
                 results_by_image[img] = []
             results_by_image[img].append(r)
@@ -148,7 +148,7 @@ class ResultWindow:
 
         # Dodajemy formatowanie osi X jako datę i godzinę
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d %H:%M"))
-        fig.autofmt_xdate(rotation=70, ha='right')  # automatyczne pochylanie etykiet z rotacją i wyrównaniem
+        fig.autofmt_xdate(rotation=15, ha='right')  # automatyczne pochylanie etykiet z rotacją i wyrównaniem
         fig.set_size_inches(5, 4)
 
         ax.set_title("Czas reakcji w funkcji czasu (wszystkie testy)")
@@ -162,15 +162,16 @@ class ResultWindow:
         return fig, ax, chart_path_history
 
     def generate_pdf(self, chart_path_current, chart_path_history):
-
         output_dir = "resources/output"
         results = self.results_manager.get_results()
 
         from logic.image_processor import resize_image, modify_image_intensity
+        import os
+
         images_for_pdf = []
         for res in results:
-            image_name = res['image_name'].split("\\")[-1]
-            img_path = os.path.join("resources/images", image_name)
+            image_name = os.path.basename(res['image_name'])
+            img_path = os.path.join("resources", "images", image_name)
             if not os.path.exists(img_path):
                 continue
             # Oryginał (miniatura)
@@ -191,6 +192,15 @@ class ResultWindow:
                 "orig_path": orig_path,
                 "filtered_path": filtered_path
             })
+
         pdf_path = os.path.join(output_dir, "report.pdf")
-        generate_pdf_report(pdf_path, images_for_pdf, chart_path_current, chart_path_history)
+
+        # Tu kluczowa linia:
+        generate_pdf_with_fallback(pdf_path, images_for_pdf, chart_path_current, chart_path_history)
+
         messagebox.showinfo("PDF", f"Wygenerowano raport PDF: {pdf_path}")
+
+        # Usunięcie plików tymczasowych, jeśli chcesz
+        for file_name in os.listdir(output_dir):
+            if file_name.startswith("orig_") or file_name.startswith("filtered_"):
+                os.remove(os.path.join(output_dir, file_name))

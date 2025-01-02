@@ -1,0 +1,117 @@
+\ProvidesPackage{Raport}
+
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T1]{fontenc}
+\RequirePackage[polish]{babel}
+\RequirePackage{listings}
+\RequirePackage{struktex}
+\RequirePackage{hyperref}
+\RequirePackage{xcolor}
+\RequirePackage{amsmath}
+\RequirePackage{float}
+\RequirePackage{graphicx}
+\usepackage{pgf-pie}
+\usepackage{pgf-umlcd}
+\RequirePackage{tabularx, multirow}
+\RequirePackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\RequirePackage{tcolorbox}
+\RequirePackage{lmodern}        
+\RequirePackage{setspace}
+\RequirePackage{titlesec}
+
+\definecolor{ColSzkola}{RGB}{188,32,42}
+\definecolor{GraySzkola}{RGB}{89,89,89}
+\definecolor{lightyellow}{RGB}{255,255,204}
+\definecolor{codebackground}{RGB}{200,100,255}
+\definecolor{lightnavyblue}{RGB}{224,224,224}
+\newtcolorbox{ramka}[1]{colback=lightnavyblue, colframe=ColSzkola, fonttitle=\bfseries\color{lightyellow}, coltitle=lightyellow, arc=5pt, title=#1}
+
+\titleformat{\section}  % Zmiana formatu sekcji
+  {\normalfont\Large\scshape}   % Styl czcionki tytułu sekcji (małe kapitałki)
+  {\raggedleft\thesection.}      % Numeracja sekcji wyrównana do prawej z kropką
+  {1em}                          % Odstęp między numerem a tytułem sekcji
+  {}
+\titleformat{\subsection}  % Zmiana formatu subsekcji
+  {\normalfont\large\scshape}   % Styl czcionki tytułu subsekcji
+  {\raggedleft\thesubsection.}   % Numeracja subsekcji wyrównana do prawej z kropką
+  {1em}                          % Odstęp między numerem a tytułem subsekcji
+  {}
+
+% Zmiana formatu numeracji subsubsekcji
+\titleformat{\subsubsection}  % Zmiana formatu subsubsekcji
+  {\normalfont\normalsize\scshape}   % Styl czcionki tytułu subsubsekcji
+  {\raggedleft\thesubsubsection.}     % Numeracja subsubsekcji wyrównana do prawej z kropką
+  {1em}                               % Odstęp między numerem a tytułem subsubsekcji
+  {}
+
+% Custom commands for report metadata
+\newcommand{\tytulCw}{Ćwiecnie tytuł}
+\newcommand{\Autor}{Janusz}
+\newcommand{\Studenci}{Student 1\\Student 2}
+\newcommand{\Supervisor}{dr inż Tomasz Giżewski}
+\newcommand{\lab}{Nazwa laboratorium}
+\newcommand{\grlab}{Grupa}
+\newcommand{\Data}{1-10-2024}
+\newcommand{\Szkola}{Politechnika Lubelska}
+
+\lstset{
+%  rulewidth=1.5pt,        % Ustawienie grubości ramki
+}
+
+\lstset{
+    numbersep=10pt,
+    backgroundcolor=\color{lightnavyblue},
+    rulecolor=\color{ColSzkola},
+    inputencoding=utf8,       % Ustawienie kodowania na UTF-8
+    extendedchars=true,       % Włączenie rozszerzonych znaków (takich jak polskie znaki)
+    literate=%
+    {ą}{{\k{a}}}1
+    {Ą}{{\k{A}}}1
+    {ć}{{\'c}}1
+    {Ć}{{\'C}}1
+    {ę}{{\k{e}}}1
+    {Ę}{{\k{E}}}1
+    {ł}{{\l{}}}1
+    {Ł}{{\L{}}}1
+    {ń}{{\'n}}1
+    {Ń}{{\'N}}1
+    {ó}{{\'o}}1
+    {Ó}{{\'O}}1
+    {ś}{{\'s}}1
+    {Ś}{{\'S}}1
+    {ż}{{\.z}}1
+    {Ż}{{\.Z}}1
+    {ź}{{\'z}}1
+    {Ź}{{\'Z}}1,
+    basicstyle=\ttfamily,
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    breaklines=true,
+    frame=single,
+    captionpos=b
+}
+
+% Title page design
+\newcommand{\RapPage}{
+  \noindent
+  \textcolor{ColSzkola}{\rule{\textwidth}{3mm}}  
+  \begin{tabularx}{\textwidth}{m{0.02\textwidth} m{0.28\textwidth} m{0.2\textwidth} m{0.4\textwidth} }
+%  \begin{tabularx}{\textwidth}{m{0.5cm} |m{3cm}| m{3cm}| X }
+    \vspace{1mm}
+    \multirow{3}{0.75cm}{\textcolor{ColSzkola}{\rule{6mm}{5cm}}}&\multirow{4}{3cm}{\vspace*{0pt}\centering\includegraphics[width=5cm]{logoWSPA.png}} &\Large{~}&\\ 
+    & &\multicolumn{2}{r}{\large{\textcolor{ColSzkola}{\Szkola}}} \\
+    & &\multicolumn{2}{r}{\normalsize{{}}} \\
+    & &\multicolumn{2}{r}{\textsc{\lab}} \\ 
+    \multicolumn{4}{l}{\textcolor{GraySzkola}{\rule{0.98\textwidth}{0.5mm}}} \\ 
+    &\multicolumn{3}{c}{\Large{Raport}} \\ 
+    &\multicolumn{3}{c}{\textcolor{ColSzkola}{\large{\textsc{\tytulCw}}}} \\ 
+    \multicolumn{4}{l}{\textcolor{GraySzkola}{\rule{0.98\textwidth}{0.5mm}}} \\ 
+    &\multicolumn{1}{l}{\footnotesize{Autor raportu:}}&\footnotesize{Data:} &\footnotesize{Grupa ćwiczeniowa:}\\
+    &\multicolumn{1}{c}{\textsc{\Autor}}& \Data &\multicolumn{1}{c}{\grlab}\\
+    &\Studenci&&\footnotesize{Prowadzący:}\\
+    & & &\multicolumn{1}{c}{\Supervisor}\\
+  \end{tabularx}
+  \textcolor{ColSzkola}{\rule{\textwidth}{1mm}}  
+  \vspace{0.25cm}
+}

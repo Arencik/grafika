@@ -1,18 +1,112 @@
-# logic/latex_report.py
 import os
 import subprocess
+import shutil
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from logic.pdf_report import generate_pdf_report
+
+########################################
+# 1) Funkcja do sprawdzenia dostępności LaTeX
+########################################
+
+def is_latex_installed():
+    """
+    Zwraca True, jeśli w systemie dostępne jest polecenie 'pdflatex'.
+    """
+    latex_path = shutil.which("pdflatex")  # None, jeśli nie znaleziono
+    return latex_path is not None
+
+
+########################################
+# 2) Funkcja fallback, uproszczone generowanie PDF (ReportLab)
+########################################
+
+def generate_pdf_report_fallback(pdf_path, images_for_pdf, chart_path_current, chart_path_history):
+    """
+    Uproszczona wersja generowania PDF za pomocą reportlab,
+    jeśli nie ma LaTeX-a.
+
+    Wstawiamy np. listę obrazów + krótki tekst.
+    """
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.utils import ImageReader
+
+    c = canvas.Canvas(pdf_path, pagesize=A4)
+    width, height = A4
+
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, height - 50, "Uproszczony raport (Fallback)")
+
+    # Wypisanie listy obrazów i ewentualnie wklejenie miniatur
+    y_pos = height - 100
+    c.setFont("Helvetica", 12)
+
+    c.drawString(50, y_pos, "Lista wyników (brak LaTeX-a, generowane w ReportLab):")
+    y_pos -= 30
+
+    for item in images_for_pdf:
+        line = (
+            f"Obraz: {item['image_name']}, czas: {item['reaction_time']:.2f}s, "
+            f"intensywnosc: {item['intensity']}"
+        )
+        c.drawString(50, y_pos, line)
+        y_pos -= 20
+
+        if os.path.exists(item['orig_path']):
+
+            try:
+                img = ImageReader(item['orig_path'])
+                c.drawImage(img, 50, y_pos - 80, width=100, height=80, preserveAspectRatio=True)
+            except:
+                pass
+        if os.path.exists(item['filtered_path']):
+            try:
+                img = ImageReader(item['filtered_path'])
+                c.drawImage(img, 200, y_pos - 80, width=100, height=80, preserveAspectRatio=True)
+            except:
+                pass
+        y_pos -= 100
+
+
+    if os.path.exists(chart_path_current):
+        c.drawString(50, y_pos, "Wykres bieżącego testu (fallback) ↓")
+        y_pos -= 20
+        try:
+            c.drawImage(chart_path_current, 50, y_pos - 200, width=300, height=200, preserveAspectRatio=True)
+        except:
+            pass
+        y_pos -= 220
+
+    if os.path.exists(chart_path_history):
+        c.drawString(50, y_pos, "Wykres historyczny (fallback) ↓")
+        y_pos -= 20
+        try:
+            c.drawImage(chart_path_history, 50, y_pos - 200, width=300, height=200, preserveAspectRatio=True)
+        except:
+            pass
+        y_pos -= 220
+
+    c.showPage()
+    c.save()
+
+
+########################################
+# 3) Oryginalna funkcja od generowania LaTeX
+########################################
 
 LATEX_HEADER = r"""
 \documentclass[a4paper,12pt]{article}
 \usepackage{WSPARap}
 \usepackage{graphicx}
 \usepackage{float}
-\usepackage[utf8]{inputenc}  % by zadbać o polskie znaki
-\renewcommand{\tytulCw}{Grafika Wektorowa}
+\usepackage[utf8]{inputenc}  
+\renewcommand{\tytulCw}{Raport percepji barw}
 \renewcommand{\Autor}{Program testujący}
-\renewcommand{\Studenci}{Generator Raportu}
+\renewcommand{\Studenci}{Generator raportów}
 \renewcommand{\Szkola}{Wyższa Szkoła Przedsiębiorczości i Administracji}
-\renewcommand{\lab}{Zaawansowane przetwarzanie obrazów cyfrowych}
+\renewcommand{\lab}{Raport z testu}
 \renewcommand{\grlab}{Gr-1}
 \renewcommand{\Data}{06-11-2024}
 
@@ -26,16 +120,12 @@ LATEX_FOOTER = r"""
 
 def generate_latex_report(pdf_path, images_for_pdf, chart_path_current, chart_path_history):
     """
-    Generuje plik .tex z odpowiednimi sekcjami i wywołuje pdflatex,
-    aby uzyskać finalny plik PDF.
+    Generowanie PDF przez LaTeX (patrz poprzednie przykłady).
     """
-    # 1) Nazwa pliku .tex (tymczasowego)
     tex_path = pdf_path.replace(".pdf", ".tex")
     if not tex_path.endswith(".tex"):
         tex_path += ".tex"
 
-    # 2) Zbuduj zawartość sekcji (LaTeX)
-    # -- Sekcja pierwsza: obrazy z wynikami
     section_images = [r"\section{Poszczegolne obrazy}"]
     for item in images_for_pdf:
         line = (
@@ -43,41 +133,36 @@ def generate_latex_report(pdf_path, images_for_pdf, chart_path_current, chart_pa
             f"intensywność: {item['intensity']}, timestamp: {item['timestamp']}."
         )
         section_images.append(line)
-        # wstawiamy oryginał i filtr obok siebie
-        # \includegraphics[width=0.3\textwidth]{...}
-        orig_rel = os.path.relpath(item['orig_path'], start=os.path.dirname(tex_path))
-        filtered_rel = os.path.relpath(item['filtered_path'], start=os.path.dirname(tex_path))
-
         section_images.append(r"\begin{figure}[H]")
         section_images.append(r"\centering")
+
+        # relatywne ścieżki do pliku .tex
+        orig_rel = os.path.basename(item['orig_path'])
+        filtered_rel = os.path.basename(item['filtered_path'])
+
         section_images.append(fr"\includegraphics[width=0.35\textwidth]{{{orig_rel}}}")
         section_images.append(r"\hspace{1cm}")
         section_images.append(fr"\includegraphics[width=0.35\textwidth]{{{filtered_rel}}}")
         section_images.append(fr"\caption*{{{line}}}")
         section_images.append(r"\end{figure}")
 
-    # -- Sekcja druga: wykresy
     section_charts = [r"\section{Wykresy}"]
-
-    # Wykres bieżącego testu
     if os.path.exists(chart_path_current):
-        chart_current_rel = os.path.relpath(chart_path_current, start=os.path.dirname(tex_path))
+        chart_current_rel = os.path.basename(chart_path_current)
         section_charts.append(r"\begin{figure}[H]")
         section_charts.append(r"\centering")
         section_charts.append(fr"\includegraphics[width=0.6\textwidth]{{{chart_current_rel}}}")
-        section_charts.append(r"\caption*{Wykres bieżącego testu}")
+        section_charts.append(r"\caption*{{Wykres bieżącego testu}}")
         section_charts.append(r"\end{figure}")
 
-    # Wykres historyczny
     if os.path.exists(chart_path_history):
-        chart_history_rel = os.path.relpath(chart_path_history, start=os.path.dirname(tex_path))
+        chart_history_rel = os.path.basename(chart_path_history)
         section_charts.append(r"\begin{figure}[H]")
         section_charts.append(r"\centering")
         section_charts.append(fr"\includegraphics[width=0.6\textwidth]{{{chart_history_rel}}}")
-        section_charts.append(r"\caption*{Wykres historyczny (wszystkie testy)}")
+        section_charts.append(r"\caption*{{Wykres historyczny (wszystkie testy)}}")
         section_charts.append(r"\end{figure}")
 
-    # 3) Sklejamy pełną zawartość pliku .tex
     latex_content = (
         LATEX_HEADER + "\n" +
         "\n".join(section_images) + "\n" +
@@ -85,35 +170,56 @@ def generate_latex_report(pdf_path, images_for_pdf, chart_path_current, chart_pa
         LATEX_FOOTER
     )
 
-    # 4) Zapisujemy do pliku .tex
+    os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
+
     with open(tex_path, "w", encoding="utf-8") as f:
         f.write(latex_content)
 
-    # 5) Kompilujemy do PDF (pdflatex dwukrotnie, by spis rysunków był aktualny, jeśli potrzeba)
-    #    Tutaj minimalnie raz wystarczy, ale czasem warto 2x w LaTeX.
+    sty_sources = ["resources/latex/WSPARap.sty", "resources/latex/logoWSPA.png"]
+    workdir = os.path.dirname(tex_path) if os.path.dirname(tex_path) else "."
+    for src in sty_sources:
+        if os.path.exists(src):
+            shutil.copy(src, os.path.join(workdir, src.split("/")[-1]))
+
+    # Kompilacja LaTeX
+    cmd = ["pdflatex", "-interaction=nonstopmode", os.path.basename(tex_path)]
     try:
-        # Wykonujemy w katalogu, gdzie znajduje się nasz plik .tex
-        workdir = os.path.dirname(tex_path) if os.path.dirname(tex_path) else "."
-        cmd = ["pdflatex", "-interaction=nonstopmode", os.path.basename(tex_path)]
         subprocess.run(cmd, check=True, cwd=workdir)
-        # Można drugi raz:
         subprocess.run(cmd, check=True, cwd=workdir)
     except subprocess.CalledProcessError as e:
-        print("Błąd podczas kompilowania LaTeX:", e)
+        print("Błąd podczas kompilacji LaTeX:", e)
 
-    # 6) Możemy posprzątać pliki tymczasowe (.aux, .log, itp.)
+    # Sprzątanie
     base_filename = os.path.splitext(os.path.basename(tex_path))[0]
     for ext in [".aux", ".log", ".out", ".toc"]:
         tmp_file = os.path.join(workdir, base_filename + ext)
         if os.path.exists(tmp_file):
             os.remove(tmp_file)
+    for src in sty_sources:
+        if os.path.exists(os.path.join(workdir, src.split("/")[-1])):
+            os.remove(os.path.join(workdir, src.split("/")[-1]))
 
-    # 7) (Opcjonalnie) przeniesienie powstałego PDF w docelowe miejsce
-    #    W praktyce plik pdf wygeneruje się obok .tex, w `pdf_path` (jeśli jest tam sam plik).
-    #    Zwykle pdflatex tworzy pdf o tej samej nazwie co .tex (czyli base_filename + ".pdf").
-    #    Sprawdzamy, czy jest on tam i czy trzeba go przenieść:
+    # Przeniesienie powstałego PDF
     generated_pdf = os.path.join(workdir, base_filename + ".pdf")
     if os.path.exists(generated_pdf) and generated_pdf != pdf_path:
         os.rename(generated_pdf, pdf_path)
 
-    print("[INFO] Wygenerowano PDF:", pdf_path)
+    print("[INFO] Wygenerowano PDF (LaTeX):", pdf_path)
+
+
+########################################
+# 4) Jedna spójna funkcja: generate_pdf_with_fallback
+########################################
+
+def generate_pdf_with_fallback(pdf_path, images_for_pdf, chart_path_current, chart_path_history):
+    """
+    Próbuje wygenerować PDF za pomocą LaTeX-a.
+    Jeśli nie jest dostępny, generuje uproszczony PDF w reportlab.
+    """
+    if is_latex_installed():
+        print("[INFO] LaTeX jest dostępny, generujemy PDF przez LaTeX.")
+        generate_latex_report(pdf_path, images_for_pdf, chart_path_current, chart_path_history)
+    else:
+        print("[WARN] LaTeX nie jest dostępny. Generujemy uproszczony PDF (fallback).")
+        generate_pdf_report(pdf_path, images_for_pdf, chart_path_current, chart_path_history)
+        # generate_pdf_report_fallback(pdf_path, images_for_pdf, chart_path_current, chart_path_history)
