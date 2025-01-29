@@ -71,7 +71,7 @@ class TestWindow:
 
         self.show_image_with_intensity(self.current_image_path, self.intensity)
 
-        self.master.after(100, self.update_image_intensity)
+        self.master.after(10, self.update_image_intensity)
 
     def show_image_with_intensity(self, path, intensity):
         try:
@@ -80,7 +80,7 @@ class TestWindow:
             w = self.frame.winfo_width()
             h = self.frame.winfo_height() - 100  # odjąć miejsce na przyciski
             img = resize_image(path, w, h)
-            img = modify_image_intensity(img, intensity)
+            img = modify_image_intensity(img, intensity, channel=self.controller.channel)
             tk_img = ImageTk.PhotoImage(img)
             self.image_label.configure(image=tk_img)
             self.image_label.image = tk_img
@@ -92,7 +92,7 @@ class TestWindow:
         current_intensity = self.intensity
         image_name = self.current_image_path.split("/")[-1]
 
-        self.results_manager.add_result(image_name, reaction_time, current_intensity)
+        self.results_manager.add_result(image_name, reaction_time, current_intensity, self.controller.channel)
         self.load_next_image()
 
     def stop_test(self, error=False):

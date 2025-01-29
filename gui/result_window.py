@@ -63,8 +63,9 @@ class ResultWindow:
         # WYKRES 1: Bar plot (bieżący test), oś Y: obrazy, oś X: średni czas reakcji
         fig1, ax1, chart_path_current = self.create_current_test_bar_plot(results)
 
-        # WYKRES 2: Historyczny wykres reakcji w czasie dla każdego obrazu
-        fig2, ax2, chart_path_history = self.create_historical_line_plot(all_results, results)
+        # WYKRES 2: Historyczny wykres reakcji w czasie dla kanału
+        fig2, ax2, chart_path_history = self.create_channel_vs_reaction_plot(all_results)
+        # fig2, ax2, chart_path_history = self.create_historical_line_plot(all_results, results)
 
         # Osadzenie wykresów
         canvas1 = FigureCanvasTkAgg(fig1, master=self.charts_frame)
@@ -77,8 +78,6 @@ class ResultWindow:
         canvas2 = FigureCanvasTkAgg(fig2, master=self.charts_frame)
         canvas2.draw()
         canvas2.get_tk_widget().pack(side="right", padx=10, pady=10)
-
-        # Przycisk PDF pod ramką wykresów
         
 
     def load_all_results(self):
@@ -93,7 +92,8 @@ class ResultWindow:
                     "timestamp": float(row["timestamp"]),
                     "image_name": row["image_name"],
                     "reaction_time": float(row["reaction_time"]),
-                    "intensity": int(row["intensity"])
+                    "intensity": int(row["intensity"]),
+                    "channel": row["channel"]
                 })
         return results
 
@@ -125,12 +125,45 @@ class ResultWindow:
         fig.savefig(chart_path_current)
         return fig, ax, chart_path_current
 
-    def create_historical_line_plot(self, all_results, current_results):
-        # Tworzymy liniowy wykres czasu reakcji w funkcji czasu dla poszczególnych obrazów
-        # x - czas (datetime), y - czas reakcji, seria - nazwa obrazu
+    def create_channel_vs_reaction_plot(self, all_results):
+        channels_data = {}
+
+        for r in all_results:
+            ch = r["channel"]
+            if ch not in channels_data:
+                channels_data[ch] = []
+            channels_data[ch].append(r["reaction_time"])
+
+        channels_sorted = sorted(channels_data.keys())
+        reaction_times = [
+            sum(channels_data[ch]) / len(channels_data[ch]) 
+            for ch in channels_sorted
+        ]
+        
+
+        bar_colors = [ch for ch in channels_sorted]
+
+        # 4. Plot
+        fig, ax = plt.subplots(figsize=(5, 4))
+        ax.bar(channels_sorted, reaction_times, color=bar_colors)
+        
+        ax.set_title("Średni czas reakcji dla kanału barwy")
+        ax.set_xlabel("Kanał")
+        ax.set_ylabel("Średni czas reakcji")
+        
+        fig.tight_layout()
+
+        output_dir = os.path.join("resources", "output")
+        os.makedirs(output_dir, exist_ok=True)
+        chart_path = os.path.join(output_dir, "chart_channel_vs_reaction.png")
+        fig.savefig(chart_path)
+        
+        return fig, ax, chart_path
+
+    def create_historical_line_plot(self, all_results):
+        # Ten plot był zbyt nieczytelny, żeby go do czegoś wykorzystać
         fig, ax = plt.subplots(figsize=(5,4))
 
-        # Grupowanie historycznych wyników po obrazie
         results_by_image = {}
         for r in all_results:
             img = r['image_name'].split("\\")[-1]
